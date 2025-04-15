@@ -1,1 +1,4 @@
 .vscode/
+**/blackhole_frames*/
+**/blackhole*.exe
+**/blackhole_animator.*

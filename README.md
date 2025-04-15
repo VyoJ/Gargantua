@@ -8,4 +8,5 @@ This program renders images and animations of a Schwarzschild black hole, inspir
 
 <video src="assets/CUDA_BlackHole.mp4" controls width="640"></video>
 
-## OpenGL-based
+## OpenMP-based
+
