@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <sstream>
 #include <filesystem>
+#include <chrono>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <curand_kernel.h>
@@ -351,8 +352,12 @@ int main()
                    (height + block_size.y - 1) / block_size.y);
 
     std::cout << "Starting frame rendering loop..." << std::endl;
+    auto total_start_time = std::chrono::high_resolution_clock::now();
+
     for (int frame = 0; frame < NUM_FRAMES; ++frame)
     {
+        auto frame_start_time = std::chrono::high_resolution_clock::now();
+
         std::cout << "\n--- Rendering Frame " << frame << "/" << NUM_FRAMES - 1 << " ---" << std::endl;
 
         float t = (NUM_FRAMES <= 1) ? 0.0f : static_cast<float>(frame) / (NUM_FRAMES - 1);
@@ -377,6 +382,11 @@ int main()
         renderKernel<<<grid_size, block_size>>>(d_buffer, width, height, cam_pos, cam_look_at, cam_up, fov, seed);
         cudaCheckError(cudaGetLastError());
         cudaCheckError(cudaDeviceSynchronize());
+
+        auto frame_end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> frame_duration_ms = frame_end_time - frame_start_time;
+        std::cout << " Frame " << frame << " render time: " << frame_duration_ms.count() << " ms" << std::endl;
+
         cudaCheckError(cudaMemcpy(h_buffer.data(), d_buffer, buffer_size, cudaMemcpyDeviceToHost));
 
         try
@@ -389,7 +399,17 @@ int main()
         }
     }
 
+    auto total_end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> total_duration_s = total_end_time - total_start_time;
+
     std::cout << "\n--- Rendering Finished ---" << std::endl;
+    std::cout << "Total rendering time for " << NUM_FRAMES << " frames: "
+              << total_duration_s.count() << " seconds" << std::endl;
+    if (NUM_FRAMES > 0) {
+        std::cout << "Average time per frame: "
+                  << (total_duration_s.count() / NUM_FRAMES) * 1000.0 << " ms" << std::endl;
+    }
+
 
     cudaCheckError(cudaFree(d_buffer));
     std::cout << "CUDA memory freed." << std::endl;
